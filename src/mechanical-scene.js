@@ -1002,21 +1002,26 @@ export class MechanicalScene {
     if (!group) return false;
 
     this.updatePointerFromEvent(event);
-    const currentWorldPosition = new THREE.Vector3();
-    group.getWorldPosition(currentWorldPosition);
-    const planePoint = this.getDragPlanePoint(partId, currentWorldPosition);
+    const libraryLocalPoint = this.assemblyLibrarySlots.get(partId)?.clone()
+      ?? fallbackAssemblyLibrarySlots[partId].clone();
+    group.position.copy(libraryLocalPoint);
+    group.visible = true;
+    group.updateMatrixWorld(true);
+    this.targetPositions.set(partId, libraryLocalPoint.clone());
+    this.targetScales.set(partId, Math.max(group.scale.x, 0.82));
+
+    const libraryWorldPosition = this.partParentLocalToWorld(partId, libraryLocalPoint);
+    const planePoint = this.getDragPlanePoint(partId, libraryWorldPosition);
     this.dragPlaneNormal.copy(this.camera.position).sub(planePoint).normalize();
     this.dragPlane.setFromNormalAndCoplanarPoint(this.dragPlaneNormal, planePoint);
     this.raycaster.ray.intersectPlane(this.dragPlane, this.dragPoint);
+    const localDragPoint = this.worldToPartParentLocal(partId, this.dragPoint);
 
     this.dragState = {
       partId,
-      offset: (group.userData.home ?? new THREE.Vector3()).clone()
-        .sub(group.userData.homeVisualCenter ?? group.userData.home ?? new THREE.Vector3()),
+      offset: group.position.clone().sub(localDragPoint),
     };
     this.controls.enabled = false;
-    this.targetPositions.set(partId, group.position.clone());
-    this.targetScales.set(partId, Math.max(group.scale.x, 0.82));
     return true;
   }
 
@@ -1864,11 +1869,13 @@ export class MechanicalScene {
         const isCompleted = partStatus === 'installed' || (visibleIndex > 0 && visibleIndex < state.assemblyStep);
         const isPending = assemblyStarted && partStatus === 'inLibrary';
         const isWrong = assemblyStarted && partStatus === 'placedWrong';
+        const isDragging = this.dragState?.partId === part.id;
 
         target = home.clone();
-        if (isPending) {
-          target = this.assemblyLibrarySlots.get(part.id)?.clone()
-            ?? fallbackAssemblyLibrarySlots[part.id].clone();
+        if (isDragging) {
+          target = group.position.clone();
+          targetScale = Math.max(group.scale.x, 0.72);
+        } else if (isPending) {
           targetScale = 0.82;
         } else if (customPosition && !isCompleted) {
           target = customPosition;
@@ -1881,7 +1888,7 @@ export class MechanicalScene {
             ? 'current'
             : isCompleted
               ? 'completed'
-              : isPending
+              : isPending || isDragging
                 ? 'pending'
                 : isWrong
                   ? 'wrong'
@@ -1897,7 +1904,11 @@ export class MechanicalScene {
       }
       this.targetPositions.set(part.id, target);
       this.targetScales.set(part.id, targetScale);
-      group.visible = state.viewMode !== 'operation';
+      const hiddenLibraryPart = state.viewMode === 'assembly'
+        && Boolean(state.assemblyStarted)
+        && (state.partStatuses?.[part.id] ?? 'inLibrary') === 'inLibrary'
+        && this.dragState?.partId !== part.id;
+      group.visible = state.viewMode !== 'operation' && !hiddenLibraryPart;
     });
 
     this.payloadGroups.forEach((group, payloadId) => {

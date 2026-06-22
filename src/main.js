@@ -625,7 +625,7 @@ function renderActionPanel() {
       <div class="assembly-action-copy">
         <span>Assembly Control</span>
         <h2>${step.name}</h2>
-        <p>${state.assemblyStarted ? '按右侧 3D 零件库顺序拖拽当前零件到安装位。' : '点击开始装配后，零件会进入右侧库位，按流程逐步完成装配验证。'}</p>
+        <p>${state.assemblyStarted ? '按右侧 3D 零件库顺序拖拽当前零件到安装位。' : '点击开始装配后，零件会收纳到右侧库位，按流程逐步完成装配验证。'}</p>
       </div>
       <button class="assembly-start-button" data-assembly-action="advance" ${buttonDisabled}>${buttonLabel}</button>
       <div class="assembly-action-meta">
@@ -684,7 +684,7 @@ function renderRightPanel() {
       <div class="assembly-status-panel">
         <div class="library-note">
           <strong>${state.assemblyStarted ? '从库中拖拽零件进行手动装配' : '初始检查保持完整装配态'}</strong>
-          <p>${state.assemblyStarted ? '请按底部流程顺序装配，正确位置会自动吸附。' : '点击开始装配后，所有部件会移动到右侧 3D 零件库。'}</p>
+          <p>${state.assemblyStarted ? '请按底部流程顺序装配，正确位置会自动吸附。' : '点击开始装配后，零件收纳到右侧 3D 零件库，可从库位拖拽取件。'}</p>
         </div>
         ${renderAssemblyLibraryStage(stepPart)}
         <p class="library-direction">取件路径：右侧库位 → 中央机械臂安装点</p>
@@ -857,7 +857,7 @@ function setActiveTab(tab) {
     state.selectedPart = null;
     state.focusAnchor = null;
     resetAssemblyParts('inspection');
-    state.lastWarning = '装配验证：初始检查显示完整机械臂，点击开始装配后零件进入右侧 3D 零件库。';
+    state.lastWarning = '装配验证：初始检查显示完整机械臂，点击开始装配后零件收纳到右侧 3D 零件库。';
   }
 
   if (tab === 'operation') {
@@ -922,7 +922,7 @@ function advanceAssembly() {
   }
 
   startManualAssembly();
-  state.lastWarning = '开始装配：所有零件已进入右侧 3D 零件库，请先拖拽当前目标零件。';
+  state.lastWarning = '开始装配：零件已收纳到右侧 3D 零件库，请先拖拽当前目标零件。';
   renderState();
 }
 
@@ -990,7 +990,7 @@ function resetPrototype() {
   resetAssemblyParts('inspection');
   state.operationCount = 0;
   state.errorCount = 0;
-  state.lastWarning = '已重置到初始检查：点击开始装配后零件进入右侧零件库。';
+  state.lastWarning = '已重置到初始检查：点击开始装配后零件收纳到右侧零件库。';
   state.lastGesture = '未触发';
   scene.resetCamera();
   renderState();
